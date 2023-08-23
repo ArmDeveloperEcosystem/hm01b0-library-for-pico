@@ -35,20 +35,6 @@
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
 
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
-enum  {
-  BLINK_NOT_MOUNTED = 250,
-  BLINK_MOUNTED = 1000,
-  BLINK_SUSPENDED = 2500,
-};
-
-static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
-
-void led_blinking_task(void);
 void video_task(void);
 
 /*------------- MAIN -------------*/
@@ -62,7 +48,6 @@ int main(void)
   while (1)
   {
     tud_task(); // tinyusb device task
-    led_blinking_task();
 
     video_task();
   }
@@ -75,13 +60,11 @@ int main(void)
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {
-  blink_interval_ms = BLINK_MOUNTED;
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
-  blink_interval_ms = BLINK_NOT_MOUNTED;
 }
 
 // Invoked when usb bus is suspended
@@ -90,13 +73,11 @@ void tud_umount_cb(void)
 void tud_suspend_cb(bool remote_wakeup_en)
 {
   (void) remote_wakeup_en;
-  blink_interval_ms = BLINK_SUSPENDED;
 }
 
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
-  blink_interval_ms = BLINK_MOUNTED;
 }
 
 
@@ -108,65 +89,10 @@ static unsigned tx_busy = 0;
 static unsigned interval_ms = 1000 / FRAME_RATE;
 
 /* YUY2 frame buffer */
-#ifdef CFG_EXAMPLE_VIDEO_READONLY
-#include "images.h"
-
-# if !defined(CFG_EXAMPLE_VIDEO_DISABLE_MJPG)
-static struct {
-  uint32_t       size;
-  uint8_t const *buffer;
-} const frames[] = {
-  {color_bar_0_jpg_len, color_bar_0_jpg},
-  {color_bar_1_jpg_len, color_bar_1_jpg},
-  {color_bar_2_jpg_len, color_bar_2_jpg},
-  {color_bar_3_jpg_len, color_bar_3_jpg},
-  {color_bar_4_jpg_len, color_bar_4_jpg},
-  {color_bar_5_jpg_len, color_bar_5_jpg},
-  {color_bar_6_jpg_len, color_bar_6_jpg},
-  {color_bar_7_jpg_len, color_bar_7_jpg},
-};
-# endif
-
-#else
 static uint8_t frame_buffer[FRAME_WIDTH * FRAME_HEIGHT * 16 / 8];
-static void fill_color_bar(uint8_t *buffer, unsigned start_position)
+static void fill_camera_frame(uint8_t *buffer)
 {
-  /* EBU color bars
-   * See also https://stackoverflow.com/questions/6939422 */
-  static uint8_t const bar_color[8][4] = {
-    /*  Y,   U,   Y,   V */
-    { 235, 128, 235, 128}, /* 100% White */
-    { 219,  16, 219, 138}, /* Yellow */
-    { 188, 154, 188,  16}, /* Cyan */
-    { 173,  42, 173,  26}, /* Green */
-    {  78, 214,  78, 230}, /* Magenta */
-    {  63, 102,  63, 240}, /* Red */
-    {  32, 240,  32, 118}, /* Blue */
-    {  16, 128,  16, 128}, /* Black */
-  };
-  uint8_t *p;
-
-  /* Generate the 1st line */
-  uint8_t *end = &buffer[FRAME_WIDTH * 2];
-  unsigned idx = (FRAME_WIDTH / 2 - 1) - (start_position % (FRAME_WIDTH / 2));
-  p = &buffer[idx * 4];
-  for (unsigned i = 0; i < 8; ++i) {
-    for (int j = 0; j < FRAME_WIDTH / (2 * 8); ++j) {
-      memcpy(p, &bar_color[i], 4);
-      p += 4;
-      if (end <= p) {
-        p = buffer;
-      }
-    }
-  }
-  /* Duplicate the 1st line to the others */
-  p = &buffer[FRAME_WIDTH * 2];
-  for (unsigned i = 1; i < FRAME_HEIGHT; ++i) {
-    memcpy(p, buffer, FRAME_WIDTH * 2);
-    p += FRAME_WIDTH * 2;
-  }
 }
-#endif
 
 void video_task(void)
 {
@@ -182,35 +108,20 @@ void video_task(void)
   if (!already_sent) {
     already_sent = 1;
     start_ms = board_millis();
-#ifdef CFG_EXAMPLE_VIDEO_READONLY
-# if defined(CFG_EXAMPLE_VIDEO_DISABLE_MJPG)
-    tud_video_n_frame_xfer(0, 0, (void*)(uintptr_t)&frame_buffer[(frame_num % (FRAME_WIDTH / 2)) * 4],
-                           FRAME_WIDTH * FRAME_HEIGHT * 16/8);
-# else
-    tud_video_n_frame_xfer(0, 0, (void*)(uintptr_t)frames[frame_num % 8].buffer, frames[frame_num % 8].size);
-# endif
-#else
-    fill_color_bar(frame_buffer, frame_num);
+    tx_busy = 1;
+
+    fill_camera_frame(frame_buffer);
     tud_video_n_frame_xfer(0, 0, (void*)frame_buffer, FRAME_WIDTH * FRAME_HEIGHT * 16/8);
-#endif
   }
 
   unsigned cur = board_millis();
   if (cur - start_ms < interval_ms) return; // not enough time
   if (tx_busy) return;
+  tx_busy = 1;
   start_ms += interval_ms;
 
-#ifdef CFG_EXAMPLE_VIDEO_READONLY
-# if defined(CFG_EXAMPLE_VIDEO_DISABLE_MJPG)
-  tud_video_n_frame_xfer(0, 0, (void*)(uintptr_t)&frame_buffer[(frame_num % (FRAME_WIDTH / 2)) * 4],
-                         FRAME_WIDTH * FRAME_HEIGHT * 16/8);
-# else
-  tud_video_n_frame_xfer(0, 0, (void*)(uintptr_t)frames[frame_num % 8].buffer, frames[frame_num % 8].size);
-# endif
-#else
-  fill_color_bar(frame_buffer, frame_num);
+  fill_camera_frame(frame_buffer);
   tud_video_n_frame_xfer(0, 0, (void*)frame_buffer, FRAME_WIDTH * FRAME_HEIGHT * 16/8);
-#endif
 }
 
 void tud_video_frame_xfer_complete_cb(uint_fast8_t ctl_idx, uint_fast8_t stm_idx)
@@ -228,20 +139,4 @@ int tud_video_commit_cb(uint_fast8_t ctl_idx, uint_fast8_t stm_idx,
   /* convert unit to ms from 100 ns */
   interval_ms = parameters->dwFrameInterval / 10000;
   return VIDEO_ERROR_NONE;
-}
-
-//--------------------------------------------------------------------+
-// BLINKING TASK
-//--------------------------------------------------------------------+
-void led_blinking_task(void)
-{
-  static uint32_t start_ms = 0;
-  static bool led_state = false;
-
-  // Blink every interval ms
-  if ( board_millis() - start_ms < blink_interval_ms) return; // not enough time
-  start_ms += blink_interval_ms;
-
-  board_led_write(led_state);
-  led_state = 1 - led_state; // toggle
 }

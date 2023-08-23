@@ -75,37 +75,9 @@ uint8_t const * tud_descriptor_device_cb(void)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-#if defined(CFG_EXAMPLE_VIDEO_READONLY) && !defined(CFG_EXAMPLE_VIDEO_DISABLE_MJPEG)
-# if 1 == CFG_TUD_VIDEO_STREAMING_BULK
-#  define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_MJPEG_BULK_LEN)
-# else
-#  define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_MJPEG_LEN)
-# endif
-#else
-# if 1 == CFG_TUD_VIDEO_STREAMING_BULK
-#  define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_BULK_LEN)
-# else
-#  define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_LEN)
-# endif
-#endif
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_BULK_LEN)
 
-#if TU_CHECK_MCU(OPT_MCU_LPC175X_6X, OPT_MCU_LPC177X_8X, OPT_MCU_LPC40XX)
-  // LPC 17xx and 40xx endpoint type (bulk/interrupt/iso) are fixed by its number
-  // 0 control, 1 In, 2 Bulk, 3 Iso, 4 In, 5 Bulk etc ...
-#if 1 == CFG_TUD_VIDEO_STREAMING_BULK
-  #define EPNUM_VIDEO_IN    0x82
-#else
-  #define EPNUM_VIDEO_IN    0x83
-#endif
-
-#elif TU_CHECK_MCU(OPT_MCU_NRF5X)
-  // nRF5x ISO can only be endpoint 8
-  #define EPNUM_VIDEO_IN    0x88
-
-#else
-  #define EPNUM_VIDEO_IN    0x81
-
-#endif
+#define EPNUM_VIDEO_IN    0x81
 
 uint8_t const desc_fs_configuration[] =
 {
@@ -113,27 +85,9 @@ uint8_t const desc_fs_configuration[] =
   TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0, 500),
 
   // IAD for Video Control
-#if defined(CFG_EXAMPLE_VIDEO_READONLY) && !defined(CFG_EXAMPLE_VIDEO_DISABLE_MJPEG)
-# if 1 == CFG_TUD_VIDEO_STREAMING_BULK
-  TUD_VIDEO_CAPTURE_DESCRIPTOR_MJPEG_BULK(4, EPNUM_VIDEO_IN,
-                                          FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
-                                          64)
-# else
-  TUD_VIDEO_CAPTURE_DESCRIPTOR_MJPEG(4, EPNUM_VIDEO_IN,
-                                     FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
-                                     CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE)
-# endif
-#else
-# if 1 == CFG_TUD_VIDEO_STREAMING_BULK
   TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(4, EPNUM_VIDEO_IN,
                                             FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
                                             64)
-# else
-  TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR(4, EPNUM_VIDEO_IN,
-                                       FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
-                                       CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE)
-# endif
-#endif
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
