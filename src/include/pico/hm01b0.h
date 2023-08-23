@@ -1,3 +1,8 @@
+//
+// SPDX-FileCopyrightText: Copyright 2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
+// SPDX-License-Identifier: MIT
+//
+
 #ifndef _PICO_HM01B0_H_
 #define _PICO_HM01B0_H_
 
