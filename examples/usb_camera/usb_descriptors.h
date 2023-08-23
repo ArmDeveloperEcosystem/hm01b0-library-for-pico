@@ -33,9 +33,17 @@
 #define UVC_ENTITY_CAP_INPUT_TERMINAL  0x01
 #define UVC_ENTITY_CAP_OUTPUT_TERMINAL 0x02
 
-#define FRAME_WIDTH   128
-#define FRAME_HEIGHT  96
-#define FRAME_RATE    10
+#ifndef FRAME_WIDTH
+#define FRAME_WIDTH   160
+#endif
+
+#ifndef FRAME_HEIGHT
+#define FRAME_HEIGHT  120
+#endif
+
+#ifndef FRAME_RATE
+#define FRAME_RATE    30
+#endif
 
 enum {
   ITF_NUM_VIDEO_CONTROL,

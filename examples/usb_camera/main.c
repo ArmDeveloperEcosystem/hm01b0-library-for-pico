@@ -31,16 +31,60 @@
 #include "tusb.h"
 #include "usb_descriptors.h"
 
+#include "pico/hm01b0.h"
+
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
 
 void video_task(void);
 
+struct hm01b0_config hm01b0_config = {
+    .i2c           = PICO_DEFAULT_I2C_INSTANCE,
+    .sda_pin       = PICO_DEFAULT_I2C_SDA_PIN,
+    .scl_pin       = PICO_DEFAULT_I2C_SCL_PIN,
+
+#ifdef SPARKFUN_MICROMOD
+    .vsync_pin     = 25,
+    .hsync_pin     = 28,
+    .pclk_pin      = 11,
+    .data_pin_base = 16,
+    .data_bits     = 8,
+    .pio           = pio0,
+    .pio_sm        = 0,
+    .reset_pin     = 24,
+    .mclk_pin      = 10,
+#else
+    .vsync_pin     = 6,
+    .hsync_pin     = 7,
+    .pclk_pin      = 8,
+    .data_pin_base = 9,
+    .data_bits     = 1,
+    .pio           = pio0,
+    .pio_sm        = 0,
+    .reset_pin     = -1, // not connected
+    .mclk_pin      = -1, // not connected
+#endif
+
+    .width         = FRAME_WIDTH,
+    .height        = FRAME_HEIGHT,
+};
+
 /*------------- MAIN -------------*/
 int main(void)
 {
   board_init();
+
+#ifdef SPARKFUN_MICROMOD
+  gpio_set_dir(25, GPIO_IN);
+#endif
+
+  if (hm01b0_init(&hm01b0_config) != 0)
+  {
+    printf("failed to initialize camera!\n");
+
+    while (1) { tight_loop_contents(); }
+  }
 
   // init device stack on configured roothub port
   tud_init(BOARD_TUD_RHPORT);
@@ -90,8 +134,20 @@ static unsigned interval_ms = 1000 / FRAME_RATE;
 
 /* YUY2 frame buffer */
 static uint8_t frame_buffer[FRAME_WIDTH * FRAME_HEIGHT * 16 / 8];
+static uint8_t monochrome_buffer[FRAME_WIDTH * FRAME_HEIGHT];
+
 static void fill_camera_frame(uint8_t *buffer)
 {
+  const uint8_t* src = monochrome_buffer;
+
+  hm01b0_read_frame(monochrome_buffer, sizeof(monochrome_buffer));
+
+  for (int y = 0; y < FRAME_HEIGHT; y++) {
+    for (int x = 0; x < FRAME_WIDTH; x++) {
+      *buffer++ = *src++;
+      *buffer++ = 128;
+    }
+  }
 }
 
 void video_task(void)
