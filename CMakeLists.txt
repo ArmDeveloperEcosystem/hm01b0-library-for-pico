@@ -23,3 +23,5 @@ target_link_libraries(pico_hm01b0 INTERFACE
     hardware_pio
     hardware_pwm
 )
+
+add_subdirectory("examples/serial_terminal")
