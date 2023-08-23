@@ -8,7 +8,7 @@
 #include "pico/stdlib.h"
 #include "pico/hm01b0.h"
 
-struct hm01b0_config hm01b0_config = {
+const struct hm01b0_config hm01b0_config = {
     .i2c           = PICO_DEFAULT_I2C_INSTANCE,
     .sda_pin       = PICO_DEFAULT_I2C_SDA_PIN,
     .scl_pin       = PICO_DEFAULT_I2C_SCL_PIN,
@@ -17,8 +17,8 @@ struct hm01b0_config hm01b0_config = {
     .vsync_pin     = 25,
     .hsync_pin     = 28,
     .pclk_pin      = 11,
-    .data_pin_base = 16,
-    .data_bits     = 8,
+    .data_pin_base = 16,   // Base data pin
+    .data_bits     = 8,    // The SparkFun MicroMod ML Carrier Board has all 8 data pins connected
     .pio           = pio0,
     .pio_sm        = 0,
     .reset_pin     = 24,
@@ -31,8 +31,8 @@ struct hm01b0_config hm01b0_config = {
     .data_bits     = 1,
     .pio           = pio0,
     .pio_sm        = 0,
-    .reset_pin     = -1, // not connected
-    .mclk_pin      = -1, // not connected
+    .reset_pin     = -1,   // Not connected
+    .mclk_pin      = -1,   // Not connected
 #endif
 
     .width         = 160,
@@ -71,6 +71,7 @@ int main( void )
         tight_loop_contents();
     }
 
+    // Initialize the camera
     if (hm01b0_init(&hm01b0_config) != 0) {
         printf("failed to initialize camera!\n");
 
@@ -80,10 +81,13 @@ int main( void )
     row[160] = '\0';
 
     while (true) {
+        // Read frame from camera
         hm01b0_read_frame(pixels, sizeof(pixels));
 
         printf("\033[2J");
         for (int y = 0; y < 120; y += 2) {
+            // Map each pixel in the row to an ASCII character, and send the row over stdio
+
             printf("\033[%dH", y / 2);
             for (int x = 0; x < 160; x++) {
                 uint8_t pixel = pixels[160 * y + x];

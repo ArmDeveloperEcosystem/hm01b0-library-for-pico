@@ -40,7 +40,7 @@
 
 void video_task(void);
 
-struct hm01b0_config hm01b0_config = {
+const struct hm01b0_config hm01b0_config = {
     .i2c           = PICO_DEFAULT_I2C_INSTANCE,
     .sda_pin       = PICO_DEFAULT_I2C_SDA_PIN,
     .scl_pin       = PICO_DEFAULT_I2C_SCL_PIN,
@@ -49,8 +49,8 @@ struct hm01b0_config hm01b0_config = {
     .vsync_pin     = 25,
     .hsync_pin     = 28,
     .pclk_pin      = 11,
-    .data_pin_base = 16,
-    .data_bits     = 8,
+    .data_pin_base = 16,   // Base data pin
+    .data_bits     = 8,    // The SparkFun MicroMod ML Carrier Board has all 8 data pins connected
     .pio           = pio0,
     .pio_sm        = 0,
     .reset_pin     = 24,
@@ -59,12 +59,12 @@ struct hm01b0_config hm01b0_config = {
     .vsync_pin     = 6,
     .hsync_pin     = 7,
     .pclk_pin      = 8,
-    .data_pin_base = 9,
-    .data_bits     = 1,
+    .data_pin_base = 9,    // Base data pin
+    .data_bits     = 1,    // Use only 1 pin for data
     .pio           = pio0,
     .pio_sm        = 0,
-    .reset_pin     = -1, // not connected
-    .mclk_pin      = -1, // not connected
+    .reset_pin     = -1,   // Not connected
+    .mclk_pin      = -1,   // Not connected
 #endif
 
     .width         = FRAME_WIDTH,
@@ -141,8 +141,11 @@ static void fill_camera_frame(uint8_t *buffer)
 {
   const uint8_t* src = monochrome_buffer;
 
+  // Read frame from camera
   hm01b0_read_frame(monochrome_buffer, sizeof(monochrome_buffer));
 
+  // Copy monochrome frame data to frame buffer as Y value,
+  // set U and V values with a fixed value of 128.
   for (int y = 0; y < FRAME_HEIGHT; y++) {
     for (int x = 0; x < FRAME_WIDTH; x++) {
       *buffer++ = *src++;
