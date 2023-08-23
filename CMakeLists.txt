@@ -25,3 +25,4 @@ target_link_libraries(pico_hm01b0 INTERFACE
 )
 
 add_subdirectory("examples/serial_terminal")
+add_subdirectory("examples/usb_camera")
