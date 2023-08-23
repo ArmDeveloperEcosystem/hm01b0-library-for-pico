@@ -100,6 +100,12 @@
 // video streaming endpoint size
 #define CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE  64
 
+#if LIB_PICO_STDIO_USB == 1
+#define CFG_TUD_CDC              1
+#define CFG_TUD_CDC_RX_BUFSIZE  (256)
+#define CFG_TUD_CDC_TX_BUFSIZE  (256)
+#endif
+
 #ifdef __cplusplus
  }
 #endif

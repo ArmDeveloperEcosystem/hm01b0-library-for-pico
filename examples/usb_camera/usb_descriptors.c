@@ -75,9 +75,23 @@ uint8_t const * tud_descriptor_device_cb(void)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
+#if LIB_PICO_STDIO_USB == 1
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_BULK_LEN + TUD_CDC_DESC_LEN)
+#else
 #define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_BULK_LEN)
+#endif
 
 #define EPNUM_VIDEO_IN    0x81
+
+#if LIB_PICO_STDIO_USB == 1
+#define USBD_CDC_EP_CMD (0x82)
+#define USBD_CDC_EP_OUT (0x03)
+#define USBD_CDC_EP_IN (0x83)
+#define USBD_CDC_CMD_MAX_SIZE (8)
+#define USBD_CDC_IN_OUT_MAX_SIZE (64)
+
+#define USBD_STR_CDC (0x04)
+#endif
 
 uint8_t const desc_fs_configuration[] =
 {
@@ -87,7 +101,12 @@ uint8_t const desc_fs_configuration[] =
   // IAD for Video Control
   TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(4, EPNUM_VIDEO_IN,
                                             FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
-                                            64)
+                                            64),
+
+#if LIB_PICO_STDIO_USB == 1
+  TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, USBD_STR_CDC, USBD_CDC_EP_CMD,
+        USBD_CDC_CMD_MAX_SIZE, USBD_CDC_EP_OUT, USBD_CDC_EP_IN, USBD_CDC_IN_OUT_MAX_SIZE),
+#endif
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -112,6 +131,9 @@ char const* string_desc_arr [] =
   "TinyUSB Device",              // 2: Product
   "123456",                      // 3: Serials, should use chip ID
   "TinyUSB UVC",                 // 4: UVC Interface
+#if LIB_PICO_STDIO_USB == 1
+  "TinyUSB CDC",                 // 5: UVC Interface
+#endif
 };
 
 static uint16_t _desc_str[32];
