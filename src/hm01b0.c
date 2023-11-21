@@ -105,8 +105,8 @@ int hm01b0_init(const struct hm01b0_config* config)
         uint mclk_channel = pwm_gpio_to_channel(config->mclk_pin);
 
         // TODO: verify frequency
-        pwm_set_wrap(mclk_slice_num, 4); //6);
-        pwm_set_chan_level(mclk_slice_num, mclk_channel, 2); //3);
+        pwm_set_wrap(mclk_slice_num, 4);
+        pwm_set_chan_level(mclk_slice_num, mclk_channel, 2);
         pwm_set_enabled(mclk_slice_num, true);
     }
 
@@ -240,6 +240,21 @@ void hm01b0_read_frame(uint8_t* buffer, size_t length)
     pio_sm_set_enabled(config->pio, config->pio_sm, false);
     dma_channel_unclaim(dma_channel);
     hm01b0_write_reg8(0x0100, 0x00); // MODE_SELECT
+}
+
+void hm01b0_set_coarse_integration(unsigned int lines)
+{
+    if (lines < 2) {
+        lines = 2;
+    } else if (lines > 0xffff) {
+        lines = 0xffff;
+    }
+
+    lines -= 2;
+
+    hm01b0_write_reg16(0x0202, lines); // INTEGRATION_H
+
+    hm01b0_write_reg8(0x0104, 0x01); // GRP_PARAM_HOLD
 }
 
 static int hm01b0_reset()

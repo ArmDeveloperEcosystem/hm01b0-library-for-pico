@@ -35,4 +35,6 @@ void hm01b0_deinit();
 
 void hm01b0_read_frame(uint8_t* buffer, size_t length);
 
+void hm01b0_set_coarse_integration(unsigned int lines);
+
 #endif

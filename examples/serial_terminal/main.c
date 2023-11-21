@@ -78,6 +78,11 @@ int main( void )
         while (1) { tight_loop_contents(); }
     }
 
+    // optional, set course integration time in number of lines: 2 to 0xFFFF
+    // this controls the exposure
+    //
+    // hm01b0_set_coarse_integration(2);
+
     row[160] = '\0';
 
     while (true) {

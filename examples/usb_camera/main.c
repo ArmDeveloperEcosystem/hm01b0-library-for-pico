@@ -87,6 +87,11 @@ int main(void)
     while (1) { tight_loop_contents(); }
   }
 
+  // optional, set course integration time in number of lines: 2 to 0xFFFF
+  // this controls the exposure
+  //
+  // hm01b0_set_coarse_integration(2);
+
   // init device stack on configured roothub port
   tud_init(BOARD_TUD_RHPORT);
 
