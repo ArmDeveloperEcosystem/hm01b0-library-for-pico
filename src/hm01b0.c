@@ -104,8 +104,9 @@ int hm01b0_init(const struct hm01b0_config* config)
         uint mclk_slice_num = pwm_gpio_to_slice_num(config->mclk_pin);
         uint mclk_channel = pwm_gpio_to_channel(config->mclk_pin);
 
-        // TODO: verify frequency
-        pwm_set_wrap(mclk_slice_num, 4);
+        // PWM @ ~25 MHz, 50% duty cycle
+        pwm_set_clkdiv(mclk_slice_num, 1.25);
+        pwm_set_wrap(mclk_slice_num, 3);
         pwm_set_chan_level(mclk_slice_num, mclk_channel, 2);
         pwm_set_enabled(mclk_slice_num, true);
     }
