@@ -2,6 +2,8 @@
 
 Capture monochrome images on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/raspberry-pi-pico/) with a [Himax HM01B0 based](https://www.himax.com.tw/products/cmos-image-sensor/always-on-vision-sensors/hm01b0/) camera module.
 
+Learn more in the [Raspberry Pi "Real-time monochrome camera input on Raspberry Pi Pico" guest blog post](https://www.raspberrypi.com/news/real-time-monochrome-camera-input-on-raspberry-pi-pico/).
+
 ## Hardware
 
  * RP2040 board
